@@ -1,0 +1,16 @@
+neru.yml
+watcher.json
+.DS_Store
+.nyc_output
+.idea
+.env
+.vscode
+*.sw*
+coverage
+dist
+es5
+logs
+node_modules
+npm-debug.log
+package-lock.json
+

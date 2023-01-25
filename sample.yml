@@ -1,0 +1,26 @@
+project:
+  name: sample-name
+instance:
+  name: prod
+  runtime: nodejs16
+  region: aws.euw1
+  application-id: 12343545-23434-343434343
+  entrypoint:
+    - node
+    - index.js
+  environment:
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: mysamplegooglecreds.json
+    - name: spreadSheetId
+      value: asdsds-dvdv-2311xxk-vc
+    - name: emailPassword
+      value: vxlksucaddcvryli
+    - name: username
+      value: myusername
+    - name: password
+      value: mypassword
+debug:
+  name: debug
+  entrypoint:
+    - nodemon
+    - index.js
