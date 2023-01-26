@@ -86,8 +86,6 @@ async function findCustomer(apiKey) {
 
 const formatAlerts = async (alerts) => {
   const alertsFormatted = [];
-  console.log('got alerts');
-  console.log(alerts[2]);
 
   return new Promise(async (res, rej) => {
     for (const alert of alerts) {
