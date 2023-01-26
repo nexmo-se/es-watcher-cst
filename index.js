@@ -8,6 +8,8 @@ import { getValues } from './services/google.js';
 import { basicAuth } from './services/auth.js';
 let customersGrouped = [];
 
+const globalState = neru.getGlobalState();
+
 app.use(express.json());
 
 app.get('/_/health', async (req, res) => {
@@ -25,7 +27,7 @@ app.post('/webhook', async (req, res) => {
     let string = ``;
     const alerts = req.body;
     const time = req.query.time;
-    const alertsFormatted = formatAlerts(alerts);
+    const alertsFormatted = await formatAlerts(alerts);
     string += `<p>2FA / Verify Suspicious traffic - More than 100 SMS sent to short number ranges in the last 24h:</p>`;
     alertsFormatted.forEach((customerWithAlert) => {
       string += `<h3>Alerts for ${customerWithAlert.name}</h3>\n`;
@@ -40,8 +42,10 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-app.get('/result', (req, res) => {
-  res.send(customersGrouped);
+app.get('/result', async (req, res) => {
+  const customerString = await globalState.hget('customers', '1');
+  const customerJson = await JSON.parse(customerString);
+  res.send(customerJson);
 });
 
 app.get('/es', async (req, res) => {
@@ -70,30 +74,55 @@ app.get('/es', async (req, res) => {
   }
 });
 
-function findCustomer(apiKey) {
-  for (let i = 0; i < customersGrouped.length; i++) {
-    if (customersGrouped[i].keys.find((key) => key === apiKey)) {
-      return customersGrouped[i].name;
+async function findCustomer(apiKey) {
+  const customerString = await globalState.hget('customers', '1');
+  const customerJson = await JSON.parse(customerString);
+  for (let i = 0; i < customerJson.length; i++) {
+    if (customerJson[i].keys.find((key) => key === apiKey)) {
+      return customerJson[i].name;
     }
   }
 }
 
-const formatAlerts = (alerts) => {
+const formatAlerts = async (alerts) => {
   const alertsFormatted = [];
-  alerts.forEach((alert) => {
-    const apikey = alert.key.split(' /')[0];
-    const customer = findCustomer(apikey);
-    if (!alertsFormatted.find((e) => e.name === customer)) {
-      alertsFormatted.push({ name: customer, alerts: [`${alert.key} - ${alert.doc_count}`] });
-    } else {
-      const found = alertsFormatted.find((e) => e.name === customer);
-      found.alerts.push(`${alert.key} - ${alert.doc_count}`);
+  console.log('got alerts');
+  console.log(alerts[2]);
+
+  return new Promise(async (res, rej) => {
+    for (const alert of alerts) {
+      console.log(alert);
+
+      const apikey = alert.key.split(' /')[0];
+      const customer = await findCustomer(apikey);
+      if (!alertsFormatted.find((e) => e.name === customer)) {
+        alertsFormatted.push({ name: customer, alerts: [`${alert.key} - ${alert.doc_count}`] });
+      } else {
+        const found = alertsFormatted.find((e) => e.name === customer);
+        found.alerts.push(`${alert.key} - ${alert.doc_count}`);
+      }
     }
+    res(alertsFormatted);
   });
-  return alertsFormatted;
+  // alerts.forEach(async (alert) => {
+  //   const apikey = alert.key.split(' /')[0];
+  //   const customer = await findCustomer(apikey);
+  //   if (!alertsFormatted.find((e) => e.name === customer)) {
+  //     alertsFormatted.push({ name: customer, alerts: [`${alert.key} - ${alert.doc_count}`] });
+  //   } else {
+  //     const found = alertsFormatted.find((e) => e.name === customer);
+  //     found.alerts.push(`${alert.key} - ${alert.doc_count}`);
+  //   }
+  // });
+  //   res(alertsFormatted);
+  // });
+
+  // console.log(alertsFormatted);
+
+  // return alertsFormatted;
 };
 
-const formatCustomerAccounts = (names, apiKeys) => {
+const formatCustomerAccounts = async (names, apiKeys) => {
   let temp = [];
   for (let i = 0; i < names.length; i++) {
     if (!temp.find((e) => e.name === names[i])) {
@@ -104,6 +133,9 @@ const formatCustomerAccounts = (names, apiKeys) => {
     }
   }
   customersGrouped = temp;
+  const created = await globalState.hset('customers', {
+    ['1']: JSON.stringify(temp),
+  });
 };
 
 app.listen(port, () => {
