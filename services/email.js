@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-export const sendEmail = async (text, time) => {
+export const sendEmail = async (text, time, customerName) => {
   try {
     let testAccount = await nodemailer.createTestAccount();
 
@@ -18,7 +18,7 @@ export const sendEmail = async (text, time) => {
     let info = await transporter.sendMail({
       from: '"Elastic Search watcher " <javier.molinasanz@vonage.com>', // sender address
       to: 'test-es-javi-aaaairxqctgyckih3ubplk5vvq@vonage.org.slack.com', // list of receivers
-      subject: `EMEA CSM Managed Suspicious 2FA/Verify traffic - Prefix Alert ${time}`, // Subject line
+      subject: `EMEA CSM Managed Suspicious 2FA/Verify traffic ${customerName} - Prefix Alert ${time}`, // Subject line
       text: 'Please see alerts below',
       html: text, // html body
     });

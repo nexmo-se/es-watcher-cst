@@ -24,17 +24,20 @@ app.get('/', async (req, res, next) => {
 
 app.post('/webhook', async (req, res) => {
   try {
-    let string = ``;
+    // let string = ``;
     const alerts = req.body;
     const time = req.query.time;
     const alertsFormatted = await formatAlerts(alerts);
-    string += `<p>2FA / Verify Suspicious traffic - More than 100 SMS sent to short number ranges in the last 24h:</p>`;
+    // string += `<p>2FA / Verify Suspicious traffic - More than 100 SMS sent to short number ranges in the last 24h:</p>`;
     alertsFormatted.forEach((customerWithAlert) => {
+      let string = ``;
+      string += `<p>2FA / Verify Suspicious traffic - More than 100 SMS sent to short number ranges in the last 24h:</p>`;
       string += `<h3>Alerts for ${customerWithAlert.name}</h3>\n`;
       string += `API Key / SenderID / Country / NetworkCode / NetworkName / NetworkType / Prefixes / Traffic`;
       customerWithAlert.alerts.forEach((alert) => (string += `<p>${alert}<p>`));
+      sendEmail(string, time, customerWithAlert.name);
     });
-    sendEmail(string, time);
+    // sendEmail(string, time);
     res.sendStatus(200);
   } catch (e) {
     console.log(e);
@@ -89,8 +92,6 @@ const formatAlerts = async (alerts) => {
 
   return new Promise(async (res, rej) => {
     for (const alert of alerts) {
-      console.log(alert);
-
       const apikey = alert.key.split(' /')[0];
       const customer = await findCustomer(apikey);
       if (!alertsFormatted.find((e) => e.name === customer)) {
@@ -102,22 +103,6 @@ const formatAlerts = async (alerts) => {
     }
     res(alertsFormatted);
   });
-  // alerts.forEach(async (alert) => {
-  //   const apikey = alert.key.split(' /')[0];
-  //   const customer = await findCustomer(apikey);
-  //   if (!alertsFormatted.find((e) => e.name === customer)) {
-  //     alertsFormatted.push({ name: customer, alerts: [`${alert.key} - ${alert.doc_count}`] });
-  //   } else {
-  //     const found = alertsFormatted.find((e) => e.name === customer);
-  //     found.alerts.push(`${alert.key} - ${alert.doc_count}`);
-  //   }
-  // });
-  //   res(alertsFormatted);
-  // });
-
-  // console.log(alertsFormatted);
-
-  // return alertsFormatted;
 };
 
 const formatCustomerAccounts = async (names, apiKeys) => {
