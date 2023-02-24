@@ -39,6 +39,7 @@ export const sendSlackMessage = async (text, time, slackUser, name) => {
     var config = {
       method: 'post',
       url: `https://hooks.slack.com/services/${process.env.slackToken}`,
+      // url: `https://hooks.slack.com/services/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`,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -50,8 +51,8 @@ export const sendSlackMessage = async (text, time, slackUser, name) => {
         console.log(JSON.stringify(response.data));
       })
       .catch(function (error) {
-        console.log(error);
-        rej(error);
+        console.log(error.response.data);
+        rej(error.response.data);
       });
   });
 };

@@ -25,6 +25,8 @@ app.get('/', async (req, res, next) => {
 
 app.post('/webhook', async (req, res) => {
   try {
+    console.log('received webhook');
+
     // let string = ``;
     const alerts = req.body;
     const time = req.query.time;
@@ -47,8 +49,16 @@ app.post('/webhook', async (req, res) => {
       customerWithAlert.alerts.forEach((alert) => (string += `${alert}\n`));
       // sendEmail(string, time, customerWithAlert.name);
       console.log(customerWithAlert.slackUser);
+      if (string.length > 3000) {
+        let first = string.substr(0, 3000);
+        let second = string.substr(3000, string.length);
+        sendSlackMessage(first, time, customerWithAlert.slackUser, customerWithAlert.name);
+        sendSlackMessage(second, time, customerWithAlert.slackUser, customerWithAlert.name);
+      } else {
+        sendSlackMessage(string, time, customerWithAlert.slackUser, customerWithAlert.name);
+      }
 
-      sendSlackMessage(string, time, customerWithAlert.slackUser, customerWithAlert.name);
+      // sendSlackMessage(string, time, customerWithAlert.slackUser, customerWithAlert.name);
     });
     // sendEmail(string, time);
     res.sendStatus(200);
@@ -65,6 +75,8 @@ app.get('/result', async (req, res) => {
 });
 
 app.get('/es', async (req, res) => {
+  console.log('got request to build query');
+
   let string = ``;
   string += `(topic:event_hub_all-mt) AND !d.net:(TOLL OR US-VIRTUAL) AND d.acc:(`;
   try {
@@ -78,6 +90,7 @@ app.get('/es', async (req, res) => {
       }
     });
     string += `) AND !d.to:*.* AND @timestamp:[now-1440m TO now-4m]`;
+    console.log('got query ' + string);
 
     res.json({
       request: {
