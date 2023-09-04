@@ -52,6 +52,7 @@ export const sendSlackMessage = async (text, time, slackUser, name) => {
       })
       .catch(function (error) {
         console.log(error.response.data);
+        console.log(error.response.status);
         rej(error.response.data);
       });
   });

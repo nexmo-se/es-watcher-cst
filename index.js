@@ -52,10 +52,22 @@ app.post('/webhook', async (req, res) => {
       if (string.length > 3000) {
         let first = string.substr(0, 3000);
         let second = string.substr(3000, string.length);
-        sendSlackMessage(first, time, customerWithAlert.slackUser, customerWithAlert.name);
-        sendSlackMessage(second, time, customerWithAlert.slackUser, customerWithAlert.name);
+        sendSlackMessage(first, time, customerWithAlert.slackUser, customerWithAlert.name)
+          .then(() => {
+            console.log('sent first part');
+          })
+          .catch((e) => console.log(e));
+        sendSlackMessage(second, time, customerWithAlert.slackUser, customerWithAlert.name)
+          .then(() => {
+            console.log('sent SECOND part');
+          })
+          .catch((e) => console.log(e));
       } else {
-        sendSlackMessage(string, time, customerWithAlert.slackUser, customerWithAlert.name);
+        sendSlackMessage(string, time, customerWithAlert.slackUser, customerWithAlert.name)
+          .then(() => {
+            console.log('sent message');
+          })
+          .catch((e) => console.log(e));
       }
 
       // sendSlackMessage(string, time, customerWithAlert.slackUser, customerWithAlert.name);
@@ -106,6 +118,7 @@ app.get('/es', async (req, res) => {
 async function findCustomer(apiKey) {
   const customerString = await globalState.hget('customers', '1');
   const customerJson = await JSON.parse(customerString);
+
   for (let i = 0; i < customerJson.length; i++) {
     if (customerJson[i].keys.find((key) => key === apiKey)) {
       return { customer: customerJson[i].name, slackUser: customerJson[i].slackUser };
@@ -118,13 +131,20 @@ const formatAlerts = async (alerts) => {
 
   return new Promise(async (res, rej) => {
     for (const alert of alerts) {
+      console.log(alert);
       const apikey = alert.key.split(' /')[0];
-      const { customer, slackUser } = await findCustomer(apikey);
-      if (!alertsFormatted.find((e) => e.name === customer)) {
-        alertsFormatted.push({ name: customer, alerts: [`${alert.key} - ${alert.doc_count}`], slackUser: slackUser });
-      } else {
-        const found = alertsFormatted.find((e) => e.name === customer);
-        found.alerts.push(`${alert.key} - ${alert.doc_count}`);
+      const test = await findCustomer(apikey);
+      console.log(test);
+      if (test) {
+        const { customer, slackUser } = test;
+
+        // const { customer, slackUser } = await findCustomer(apikey);
+        if (!alertsFormatted.find((e) => e.name === customer)) {
+          alertsFormatted.push({ name: customer, alerts: [`${alert.key} - ${alert.doc_count}`], slackUser: slackUser });
+        } else {
+          const found = alertsFormatted.find((e) => e.name === customer);
+          found.alerts.push(`${alert.key} - ${alert.doc_count}`);
+        }
       }
     }
     res(alertsFormatted);
